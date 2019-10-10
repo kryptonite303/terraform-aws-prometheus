@@ -119,6 +119,7 @@ module "autoscaling" {
     "${element(module.alb.target_group_arns, 0)}",
   ]
 
+  user_data           = "${data.template_file.prometheus.rendered}"
   vpc_zone_identifier = "${local.vpc_zone_identifier}"
 }
 
@@ -176,4 +177,12 @@ module "alb" {
 
   target_groups_count = 1
   vpc_id              = "${local.vpc_id}"
+}
+
+data "template_file" "prometheus" {
+  template = "${file("${path.module}/templates/user-data.txt.tpl")}"
+
+  vars = {
+    content = "${base64encode(file("${path.module}/files/node.yml"))}"
+  }
 }
