@@ -49,6 +49,13 @@ variable "vpc_id" {
   description = "The ID of the VPC"
 }
 
+# Application load balancer variables
+variable "subnets" {
+  default     = []
+  description = "The IDs of the subnets"
+  type        = "list"
+}
+
 # Common variables
 variable "tags" {
   default     = {}

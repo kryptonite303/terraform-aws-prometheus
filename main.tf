@@ -113,6 +113,67 @@ module "autoscaling" {
     "${aws_security_group.prometheus.id}",
   ]
 
-  tags_as_map         = "${var.tags}"
+  tags_as_map = "${var.tags}"
+
+  target_group_arns = [
+    "${element(module.alb.target_group_arns, 0)}",
+  ]
+
   vpc_zone_identifier = "${local.vpc_zone_identifier}"
+}
+
+resource "aws_security_group" "alb" {
+  egress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    protocol    = "-1"
+    to_port     = 0
+  }
+
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 80
+    protocol    = "TCP"
+    to_port     = 80
+  }
+
+  name   = "prometheus-alb"
+  vpc_id = "${local.vpc_id}"
+}
+
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "~> v3.0"
+
+  http_tcp_listeners = [
+    {
+      port     = 80
+      protocol = "HTTP"
+    },
+  ]
+
+  http_tcp_listeners_count = 1
+  load_balancer_name       = "prometheus"
+  logging_enabled          = false
+
+  security_groups = [
+    "${aws_security_group.alb.id}",
+  ]
+
+  subnets = "${coalescelist(var.subnets, module.vpc.public_subnets)}"
+
+  target_groups_defaults = {
+    health_check_path = "/-/healthy"
+  }
+
+  target_groups = [
+    {
+      name             = "${format("%s-%s", "prometheus", replace(timestamp(), "/[-| |T|Z|:]/", ""))}"
+      backend_protocol = "HTTP"
+      backend_port     = 9090
+    },
+  ]
+
+  target_groups_count = 1
+  vpc_id              = "${local.vpc_id}"
 }
