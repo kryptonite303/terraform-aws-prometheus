@@ -4,11 +4,11 @@ locals {
 
   vpc_zone_identifier = "${
     split(
+      ",",
       coalesce(
         join(",", var.vpc_zone_identifier),
         var.key_name != "" ? join(",", module.vpc.public_subnets) : join(",", module.vpc.private_subnets)
-      ),
-      ","
+      )
     )
   }"
 }
