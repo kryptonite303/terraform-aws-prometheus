@@ -1,7 +1,16 @@
 locals {
-  desired_capacity    = "${coalesce(var.desired_capacity, var.min_size)}"
-  vpc_id              = "${coalesce(var.vpc_id, module.vpc.vpc_id)}"
-  vpc_zone_identifier = "${module.vpc.public_subnets}"
+  desired_capacity = "${coalesce(var.desired_capacity, var.min_size)}"
+  vpc_id           = "${coalesce(var.vpc_id, module.vpc.vpc_id)}"
+
+  vpc_zone_identifier = "${
+    split(
+      coalesce(
+        join(",", var.vpc_zone_identifier),
+        var.key_name != "" ? join(",", module.vpc.public_subnets) : join(",", module.vpc.private_subnets)
+      ),
+      ","
+    )
+  }"
 }
 
 data "aws_ami" "prometheus" {
@@ -81,14 +90,12 @@ module "autoscaling" {
   desired_capacity            = "${local.desired_capacity}"
   health_check_type           = "${var.health_check_type}"
   health_check_grace_period   = "${var.health_check_grace_period}"
-
-  # iam_instance_profile        = "${aws_iam_instance_profile.iam_instance_profile.name}"
-  image_id      = "${data.aws_ami.prometheus.id}"
-  instance_type = "${var.instance_type}"
-  key_name      = "${var.key_name}"
-  max_size      = "${var.max_size}"
-  min_size      = "${var.min_size}"
-  name          = "prometheus"
+  image_id                    = "${data.aws_ami.prometheus.id}"
+  instance_type               = "${var.instance_type}"
+  key_name                    = "${var.key_name}"
+  max_size                    = "${var.max_size}"
+  min_size                    = "${var.min_size}"
+  name                        = "prometheus"
 
   # If the launch configuration for the auto scaling group changes, then
   # a new auto scaling group is deployed. This strategy is similar to a

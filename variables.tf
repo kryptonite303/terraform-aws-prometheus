@@ -32,6 +32,12 @@ variable "min_size" {
   description = "The minimum number of Amazon EC2 instances in the Auto Scaling group"
 }
 
+variable "vpc_zone_identifier" {
+  default     = []
+  description = "A list of subnet IDs for a virtual private cloud (VPC)"
+  type        = "list"
+}
+
 # Virtual Private Cloud variables
 variable "cidr_block" {
   default     = "10.0.0.0/16"
