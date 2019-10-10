@@ -1,0 +1,55 @@
+{
+  "builders": [
+    {
+      "ami_name": "prometheus",
+      "force_delete_snapshot": true,
+      "force_deregister": true,
+      "instance_type": "{{ user `instance_type` }}",
+      "source_ami": "{{ user `source_ami` }}",
+      "source_ami_filter": {
+        "filters": {
+          "name": "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*",
+          "root-device-type": "ebs",
+          "virtualization-type": "hvm"
+        },
+        "most_recent": true,
+        "owners": [
+          "099720109477"
+        ]
+      },
+      "ssh_username": "ubuntu",
+      "type": "amazon-ebs"
+    }
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "sudo apt-get -qq remove unattended-upgrades"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "sudo add-apt-repository -y ppa:ansible/ansible",
+        "sudo apt-get -qq update",
+        "sudo apt-get -qq install ansible",
+        "sudo apt-get -qq install python-pip",
+        "pip install jmespath==0.9.4"
+      ],
+      "type": "shell"
+    },
+    {
+      "extra_arguments": [
+        "--extra-vars",
+        "ansible_python_interpreter=/usr/bin/python3"
+      ],
+      "galaxy_file": "requirements.yml",
+      "playbook_file": "playbook.yml",
+      "type": "ansible-local"
+    }
+  ],
+  "variables": {
+    "instance_type": "m3.medium",
+    "source_ami": ""
+  }
+}
