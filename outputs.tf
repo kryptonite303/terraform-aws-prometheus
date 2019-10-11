@@ -1,3 +1,4 @@
-output "ami" {
-  value = "${data.aws_ami.prometheus.id}"
+output "dns_name" {
+  description = "The public DNS name of the load balancer"
+  value       = "${module.alb.dns_name}"
 }
