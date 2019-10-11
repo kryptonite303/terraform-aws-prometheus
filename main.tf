@@ -169,7 +169,7 @@ module "alb" {
 
   target_groups = [
     {
-      name             = "${format("%s-%s", "prometheus", replace(timestamp(), "/[-| |T|Z|:]/", ""))}"
+      name             = "prometheus"
       backend_protocol = "HTTP"
       backend_port     = 9090
     },
