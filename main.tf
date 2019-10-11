@@ -1,4 +1,10 @@
 locals {
+  conditions = [
+    "${var.domain_name}",
+    "${aws_route53_record.prometheus.name}",
+    "${module.alb.dns_name}",
+  ]
+
   desired_capacity = "${coalesce(var.desired_capacity, var.min_size)}"
   vpc_id           = "${coalesce(var.vpc_id, module.vpc.vpc_id)}"
 
@@ -176,6 +182,13 @@ resource "aws_security_group" "alb" {
     to_port     = 80
   }
 
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 443
+    protocol    = "TCP"
+    to_port     = 443
+  }
+
   name   = "prometheus-alb"
   vpc_id = "${local.vpc_id}"
 }
@@ -192,8 +205,17 @@ module "alb" {
   ]
 
   http_tcp_listeners_count = 1
-  load_balancer_name       = "prometheus"
-  logging_enabled          = false
+
+  https_listeners = [
+    {
+      certificate_arn = "${var.certificate_arn}"
+      port            = 443
+    },
+  ]
+
+  https_listeners_count = "${var.certificate_arn != "" ? 1 : 0}"
+  load_balancer_name    = "prometheus"
+  logging_enabled       = false
 
   security_groups = [
     "${aws_security_group.alb.id}",
@@ -217,6 +239,50 @@ module "alb" {
   vpc_id              = "${local.vpc_id}"
 }
 
+resource "aws_lb_listener_rule" "http" {
+  action {
+    redirect {
+      host        = "${var.domain_name}"
+      port        = 443
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+
+    target_group_arn = "${join("", module.alb.target_group_arns)}"
+    type             = "redirect"
+  }
+
+  condition {
+    field  = "host-header"
+    values = ["${element(local.conditions, count.index)}"]
+  }
+
+  listener_arn = "${join("", module.alb.http_tcp_listener_arns)}"
+
+  count = "${length(local.conditions)}"
+}
+
+resource "aws_lb_listener_rule" "https" {
+  action {
+    redirect {
+      host        = "${var.domain_name}"
+      port        = 443
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+
+    target_group_arn = "${join("", module.alb.target_group_arns)}"
+    type             = "redirect"
+  }
+
+  condition {
+    field  = "host-header"
+    values = ["${aws_route53_record.prometheus.name}"]
+  }
+
+  listener_arn = "${join("", module.alb.https_listener_arns)}"
+}
+
 data "template_file" "prometheus" {
   template = "${file("${path.module}/templates/user-data.txt.tpl")}"
 
@@ -224,4 +290,18 @@ data "template_file" "prometheus" {
     content  = "${base64encode(file("${path.module}/files/node.yml"))}"
     dns_name = "${aws_efs_file_system.prometheus.dns_name}"
   }
+}
+
+resource "aws_route53_record" "prometheus" {
+  alias {
+    evaluate_target_health = true
+    name                   = "${module.alb.dns_name}"
+    zone_id                = "${module.alb.load_balancer_zone_id}"
+  }
+
+  name    = "${var.hosted_zone_name}"
+  type    = "A"
+  zone_id = "${var.hosted_zone_id}"
+
+  count = "${var.hosted_zone_name != "" ? 1 : 0}"
 }

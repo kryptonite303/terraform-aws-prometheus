@@ -67,6 +67,27 @@ variable "throughput_mode" {
   description = "The throughput mode for the file system to be created"
 }
 
+# Certificate Manager variables
+variable "certificate_arn" {
+  default     = ""
+  description = "The Amazon Resource Name (ARN) of the certificate"
+}
+
+variable "domain_name" {
+  default     = ""
+  description = "The custom domain name"
+}
+
+variable "hosted_zone_id" {
+  default     = ""
+  description = "The ID of the hosted zone that you want to create the record in"
+}
+
+variable "hosted_zone_name" {
+  default     = ""
+  description = "The name of the domain for the hosted zone where you want to add the record"
+}
+
 # Common variables
 variable "tags" {
   default     = {}
