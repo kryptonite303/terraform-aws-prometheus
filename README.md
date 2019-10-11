@@ -10,8 +10,10 @@
 | key\_name | Provides the name of the EC2 key pair | string | `""` | no |
 | max\_size | The maximum number of Amazon EC2 instances in the Auto Scaling group | string | n/a | yes |
 | min\_size | The minimum number of Amazon EC2 instances in the Auto Scaling group | string | n/a | yes |
+| performance\_mode | The performance mode of the file system | string | `"generalPurpose"` | no |
 | subnets | The IDs of the subnets | list | `<list>` | no |
 | tags | Adds or overwrites the specified tags for the specified resources | map | `<map>` | no |
+| throughput\_mode | The throughput mode for the file system to be created | string | `"bursting"` | no |
 | vpc\_id | The ID of the VPC | string | `""` | no |
 | vpc\_zone\_identifier | A list of subnet IDs for a virtual private cloud (VPC) | list | `<list>` | no |
 
