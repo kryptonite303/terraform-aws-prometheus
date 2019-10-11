@@ -56,6 +56,17 @@ variable "subnets" {
   type        = "list"
 }
 
+# Elastic File System variables
+variable "performance_mode" {
+  default     = "generalPurpose"
+  description = "The performance mode of the file system"
+}
+
+variable "throughput_mode" {
+  default     = "bursting"
+  description = "The throughput mode for the file system to be created"
+}
+
 # Common variables
 variable "tags" {
   default     = {}

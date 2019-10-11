@@ -82,6 +82,25 @@ resource "aws_security_group_rule" "egress" {
   type              = "egress"
 }
 
+resource "aws_security_group" "efs" {
+  egress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    protocol    = "-1"
+    to_port     = 0
+  }
+
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 2049
+    protocol    = "TCP"
+    to_port     = 2049
+  }
+
+  name   = "prometheus-efs"
+  vpc_id = "${local.vpc_id}"
+}
+
 module "autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> v2.0"
@@ -111,6 +130,7 @@ module "autoscaling" {
 
   security_groups = [
     "${aws_security_group.prometheus.id}",
+    "${aws_security_group.efs.id}",
   ]
 
   tags_as_map = "${var.tags}"
@@ -121,6 +141,24 @@ module "autoscaling" {
 
   user_data           = "${data.template_file.prometheus.rendered}"
   vpc_zone_identifier = "${local.vpc_zone_identifier}"
+}
+
+resource "aws_efs_file_system" "prometheus" {
+  performance_mode = "${var.performance_mode}"
+  tags             = "${merge(map("Name", "prometheus"), var.tags)}"
+  throughput_mode  = "${var.throughput_mode}"
+}
+
+resource "aws_efs_mount_target" "prometheus" {
+  file_system_id = "${aws_efs_file_system.prometheus.id}"
+
+  security_groups = [
+    "${aws_security_group.efs.id}",
+  ]
+
+  subnet_id = "${element(local.vpc_zone_identifier, count.index)}"
+
+  count = "${length(var.vpc_zone_identifier) != 0 ? length(var.vpc_zone_identifier) : 2}"
 }
 
 resource "aws_security_group" "alb" {
@@ -183,6 +221,7 @@ data "template_file" "prometheus" {
   template = "${file("${path.module}/templates/user-data.txt.tpl")}"
 
   vars = {
-    content = "${base64encode(file("${path.module}/files/node.yml"))}"
+    content  = "${base64encode(file("${path.module}/files/node.yml"))}"
+    dns_name = "${aws_efs_file_system.prometheus.dns_name}"
   }
 }
