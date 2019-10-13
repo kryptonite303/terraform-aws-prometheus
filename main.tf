@@ -259,7 +259,10 @@ resource "aws_lb_listener_rule" "http" {
 
   listener_arn = "${join("", module.alb.http_tcp_listener_arns)}"
 
-  count = "${length(local.conditions)}"
+  # Terraform 0.11.x cannot compute the length of the `conditions` local
+  # variable because the first element is known *after* running
+  # terraform apply; therefore, the `count` is statically defined.
+  count = 3
 }
 
 resource "aws_lb_listener_rule" "https" {
