@@ -1,8 +1,8 @@
 locals {
   conditions = [
-    "${var.domain_name}",
-    "${aws_route53_record.prometheus.name}",
+    "${element(aws_route53_record.prometheus.*.name, 0)}",
     "${module.alb.dns_name}",
+    "${var.domain_name}",
   ]
 
   desired_capacity = "${coalesce(var.desired_capacity, var.min_size)}"
