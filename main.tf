@@ -145,7 +145,7 @@ module "autoscaling" {
     "${element(module.alb.target_group_arns, 0)}",
   ]
 
-  user_data           = "${data.template_file.prometheus.rendered}"
+  user_data           = "${data.template_file.cloudinit.rendered}"
   vpc_zone_identifier = "${local.vpc_zone_identifier}"
 }
 
@@ -286,11 +286,20 @@ resource "aws_lb_listener_rule" "https" {
   listener_arn = "${join("", module.alb.https_listener_arns)}"
 }
 
+# The Prometheus server configuration
 data "template_file" "prometheus" {
+  template = "${file("${path.module}/templates/node.yml.tpl")}"
+
+  vars = {
+    targets = "${jsonencode(var.targets)}"
+  }
+}
+
+data "template_file" "cloudinit" {
   template = "${file("${path.module}/templates/user-data.txt.tpl")}"
 
   vars = {
-    content  = "${base64encode(file("${path.module}/files/node.yml"))}"
+    content  = "${base64encode(data.template_file.prometheus.rendered)}"
     dns_name = "${aws_efs_file_system.prometheus.dns_name}"
   }
 }

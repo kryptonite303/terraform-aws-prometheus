@@ -92,4 +92,12 @@ variable "hosted_zone_name" {
 variable "tags" {
   default     = {}
   description = "Adds or overwrites the specified tags for the specified resources"
+  type        = "map"
+}
+
+# Prometheus variables
+variable "targets" {
+  default     = []
+  description = "A list of objects to scrape"
+  type        = "list"
 }
