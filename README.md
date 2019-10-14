@@ -1,3 +1,45 @@
+## Contents
+
+- [Requirements](#requirements)
+- [Usage](#usage)
+- [Inputs](#inputs)
+- [Outputs](#outputs)
+
+## Requirements
+
+- [Terraform](https://www.terraform.io/downloads.html)
+- [Packer](https://packer.io/downloads.html)
+
+## Usage
+
+**Note:** This module requires an Amazon Machine Image (AMI) with Prometheus installed. The [`packer`](packer) subdirectory contains a Packer [template](https://www.packer.io/docs/templates/index.html) that installs Prometheus using the Ubuntu 18.04 AMI.
+
+To build the image, run the following command:
+
+```
+$ packer build template.json
+```
+
+The following example creates an Auto Scaling Group using the artifact created via Packer.
+
+```hcl
+module "prometheus" {
+  source = ".."
+
+  key_name = "prometheus"
+  max_size = 1
+  min_size = 1
+
+  tags = {
+    Environment = "production"
+  }
+
+  targets = [
+    "ec2-3-15-16-220.us-east-2.compute.amazonaws.com:9100",
+  ]
+}
+```
+
 ## Inputs
 
 | Name | Description | Type | Default | Required |
